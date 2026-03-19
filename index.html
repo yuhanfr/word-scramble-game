@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WordScramble — by Loyd Webs</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Bebas+Neue&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0a0a;--surface:#111111;--surface2:#181818;--border:#2a2a2a;--accent:#e8ff00;--accent2:#ff3c00;--text:#f0f0f0;--muted:#555;--green:#00ff7f;--red:#ff3c00;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Courier Prime',monospace;min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");opacity:0.03;pointer-events:none;z-index:9999;}
+body::after{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(232,255,0,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(232,255,0,0.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(232,255,0,0.4)}50%{box-shadow:0 0 0 10px rgba(232,255,0,0)}}
+.shake{animation:shake 0.4s ease;}
+
+/* ===== SCREENS ===== */
+.screen{position:fixed;inset:0;background:var(--bg);z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px 20px;text-align:center;overflow-y:auto;}
+.screen.hidden{display:none!important;}
+
+/* ===== SCREEN 1: NAME ENTRY ===== */
+.ne-tag{font-family:'Space Mono',monospace;font-size:10px;color:var(--accent);letter-spacing:4px;text-transform:uppercase;margin-bottom:12px;animation:fadeUp 0.5s ease 0.1s both;}
+.ne-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(56px,15vw,108px);letter-spacing:6px;line-height:0.85;color:var(--text);position:relative;display:inline-block;animation:fadeUp 0.5s ease 0.2s both;}
+.ne-title .yp{color:var(--accent);}
+.ne-title::after{content:'WORD';position:absolute;top:6px;left:6px;color:var(--accent2);opacity:0.1;z-index:-1;}
+.ne-sub{font-family:'Space Mono',monospace;font-size:11px;color:var(--muted);letter-spacing:2px;margin-top:12px;margin-bottom:44px;animation:fadeUp 0.5s ease 0.3s both;}
+.ne-box{width:100%;max-width:440px;animation:fadeUp 0.5s ease 0.4s both;}
+.ne-label{font-family:'Space Mono',monospace;font-size:10px;color:var(--accent);letter-spacing:3px;text-transform:uppercase;text-align:left;margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+.ne-label::after{content:'';flex:1;height:1px;background:var(--border);}
+.ne-input{width:100%;background:var(--surface);border:1px solid var(--border);border-bottom:3px solid var(--accent);color:var(--text);font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:5px;padding:16px 20px;outline:none;transition:all 0.2s;text-transform:uppercase;caret-color:var(--accent);}
+.ne-input::placeholder{color:#2a2a2a;}
+.ne-input:focus{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent),0 12px 32px rgba(232,255,0,0.08);}
+.ne-input.error{border-color:var(--accent2);box-shadow:0 0 0 1px var(--accent2);animation:shake 0.4s ease;}
+.ne-err{font-family:'Space Mono',monospace;font-size:10px;color:var(--accent2);letter-spacing:1px;text-align:left;margin-top:8px;height:18px;}
+.ne-btn{width:100%;margin-top:22px;font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:7px;background:var(--accent);color:var(--bg);border:none;padding:18px;cursor:pointer;transition:all 0.2s;position:relative;overflow:hidden;}
+.ne-btn:hover{transform:translateY(-2px);box-shadow:0 0 40px rgba(232,255,0,0.28);}
+.ne-footer{position:fixed;bottom:22px;font-family:'Space Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:2px;animation:fadeUp 0.5s ease 0.6s both;}
+.ne-footer span{color:var(--accent);}
+
+/* ===== SCREEN 2: LEVEL SELECT ===== */
+.sp-by{font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:3px;text-transform:uppercase;margin-bottom:6px;animation:fadeUp 0.5s ease 0.1s both;}
+.sp-by span{color:var(--accent);font-weight:700;}
+.sp-welcome{font-family:'Bebas Neue',sans-serif;font-size:clamp(24px,6vw,46px);letter-spacing:4px;color:var(--text);margin-bottom:4px;animation:fadeUp 0.5s ease 0.2s both;}
+.sp-welcome em{color:var(--accent);font-style:normal;}
+.sp-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(50px,11vw,88px);letter-spacing:6px;line-height:0.88;color:var(--text);position:relative;display:inline-block;animation:fadeUp 0.5s ease 0.25s both;}
+.sp-title .yp{color:var(--accent);}
+.sp-title::after{content:'WORD';position:absolute;top:4px;left:4px;color:var(--accent2);opacity:0.1;z-index:-1;}
+.sp-sub{font-family:'Space Mono',monospace;font-size:11px;color:var(--muted);letter-spacing:2px;margin-top:10px;margin-bottom:38px;animation:fadeUp 0.5s ease 0.3s both;}
+.lv-label{font-family:'Space Mono',monospace;font-size:10px;color:var(--accent);letter-spacing:4px;text-transform:uppercase;margin-bottom:16px;animation:fadeUp 0.5s ease 0.35s both;}
+.lv-cards{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-bottom:32px;animation:fadeUp 0.5s ease 0.4s both;}
+.lv-card{width:152px;background:var(--surface);border:1px solid var(--border);padding:22px 14px 18px;cursor:pointer;transition:all 0.2s;position:relative;overflow:hidden;}
+.lv-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
+.lv-card.easy::before{background:var(--green);}
+.lv-card.medium::before{background:var(--accent);}
+.lv-card.hard::before{background:var(--accent2);}
+.lv-card:hover{transform:translateY(-6px);}
+.lv-card.easy:hover{border-color:var(--green);box-shadow:0 14px 30px rgba(0,255,127,0.14);}
+.lv-card.medium:hover{border-color:var(--accent);box-shadow:0 14px 30px rgba(232,255,0,0.14);}
+.lv-card.hard:hover{border-color:var(--accent2);box-shadow:0 14px 30px rgba(255,60,0,0.2);}
+.lv-card.sel.easy{border-color:var(--green);background:rgba(0,255,127,0.07);}
+.lv-card.sel.medium{border-color:var(--accent);background:rgba(232,255,0,0.07);}
+.lv-card.sel.hard{border-color:var(--accent2);background:rgba(255,60,0,0.07);}
+.lv-icon{font-size:26px;margin-bottom:8px;display:block;}
+.lv-name{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:3px;display:block;margin-bottom:6px;}
+.lv-card.easy .lv-name{color:var(--green);}
+.lv-card.medium .lv-name{color:var(--accent);}
+.lv-card.hard .lv-name{color:var(--accent2);}
+.lv-desc{font-family:'Space Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:1px;line-height:1.6;}
+.sp-btns{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;animation:fadeUp 0.5s ease 0.5s both;}
+.play-btn{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:6px;background:var(--accent);color:var(--bg);border:none;padding:16px 50px;cursor:pointer;transition:all 0.2s;}
+.play-btn:hover{transform:scale(1.04);box-shadow:0 0 36px rgba(232,255,0,0.3);}
+.play-btn:disabled{opacity:0.3;cursor:not-allowed;transform:none;box-shadow:none;}
+.ol-btn{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:4px;background:transparent;color:var(--muted);border:1px solid var(--border);padding:16px 26px;cursor:pointer;transition:all 0.2s;}
+.ol-btn:hover{border-color:var(--text);color:var(--text);}
+.sp-footer{position:fixed;bottom:22px;font-family:'Space Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:2px;}
+.sp-footer span{color:var(--accent);}
+
+/* ===== SCREEN 3: LEADERBOARD ===== */
+#lbScreen{justify-content:flex-start;padding-top:40px;}
+.lb-hdr{width:100%;max-width:740px;display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;animation:fadeUp 0.4s ease 0.1s both;}
+.lb-title{font-family:'Bebas Neue',sans-serif;font-size:46px;letter-spacing:6px;color:var(--accent);}
+.back-btn{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;background:transparent;border:1px solid var(--border);color:var(--muted);padding:10px 16px;cursor:pointer;transition:all 0.15s;}
+.back-btn:hover{border-color:var(--accent);color:var(--accent);}
+.lb-empty{font-family:'Space Mono',monospace;font-size:12px;color:var(--muted);letter-spacing:2px;margin-top:80px;}
+.lb-empty strong{color:var(--accent);display:block;font-family:'Bebas Neue',sans-serif;font-size:36px;letter-spacing:4px;margin-bottom:10px;}
+.lb-table{width:100%;max-width:740px;border-collapse:collapse;animation:fadeUp 0.4s ease 0.15s both;}
+.lb-table thead tr{border-bottom:1px solid var(--accent);}
+.lb-table th{font-family:'Space Mono',monospace;font-size:9px;color:var(--accent);letter-spacing:2px;text-transform:uppercase;padding:10px 12px;text-align:left;font-weight:400;}
+.lb-table th.r{text-align:right;}
+.lb-table td{padding:12px 12px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle;}
+.lb-rank{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--muted);letter-spacing:1px;width:48px;}
+.lb-rank.gold{color:#ffd700;}.lb-rank.silver{color:#c0c0c0;}.lb-rank.bronze{color:#cd7f32;}
+.lb-name{font-family:'Bebas Neue',sans-serif;font-size:19px;letter-spacing:2px;color:var(--text);}
+.lb-lvtag{display:inline-block;font-family:'Space Mono',monospace;font-size:8px;letter-spacing:2px;padding:2px 7px;border:1px solid;text-transform:uppercase;}
+.lb-lvtag.easy{color:var(--green);border-color:var(--green);background:rgba(0,255,127,0.07);}
+.lb-lvtag.medium{color:var(--accent);border-color:var(--accent);background:rgba(232,255,0,0.07);}
+.lb-lvtag.hard{color:var(--accent2);border-color:var(--accent2);background:rgba(255,60,0,0.07);}
+.lb-score{font-family:'Bebas Neue',sans-serif;font-size:21px;color:var(--accent);letter-spacing:2px;text-align:right;}
+.lb-correct{font-family:'Space Mono',monospace;font-size:11px;color:var(--green);text-align:right;}
+.lb-wrong{font-family:'Space Mono',monospace;font-size:11px;color:var(--accent2);text-align:right;}
+.lb-date{font-family:'Space Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:1px;}
+.lb-clear{margin:24px 0 40px;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;background:transparent;border:1px solid var(--border);color:var(--muted);padding:10px 20px;cursor:pointer;transition:all 0.15s;}
+.lb-clear:hover{border-color:var(--accent2);color:var(--accent2);}
+
+/* ===== GAME WRAPPER ===== */
+#gw{display:none;position:relative;z-index:1;}
+#gw.show{display:block;}
+.con{max-width:760px;margin:0 auto;padding:28px 18px;position:relative;z-index:1;}
+.g-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:10px;}
+.g-hdr-l{display:flex;align-items:center;gap:12px;}
+.back-menu{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;background:transparent;border:1px solid var(--border);color:var(--muted);padding:8px 12px;cursor:pointer;transition:all 0.15s;white-space:nowrap;}
+.back-menu:hover{border-color:var(--accent);color:var(--accent);}
+.g-brand{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:3px;color:var(--text);}
+.g-brand span{color:var(--accent);}
+.g-right{text-align:right;}
+.g-creator{font-family:'Space Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:1px;line-height:1.7;}
+.g-creator strong{color:var(--accent);display:block;font-size:10px;}
+.g-player{font-family:'Space Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:1px;margin-top:2px;}
+.g-player span{color:var(--text);}
+.diff-badge{display:inline-block;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;padding:2px 8px;border:1px solid;text-transform:uppercase;margin-top:3px;}
+.diff-badge.easy{color:var(--green);border-color:var(--green);background:rgba(0,255,127,0.07);}
+.diff-badge.medium{color:var(--accent);border-color:var(--accent);background:rgba(232,255,0,0.07);}
+.diff-badge.hard{color:var(--accent2);border-color:var(--accent2);background:rgba(255,60,0,0.07);}
+.stats-bar{display:flex;gap:2px;margin-bottom:20px;border:1px solid var(--border);overflow:hidden;}
+.stat{flex:1;background:var(--surface);padding:12px 6px;text-align:center;border-right:1px solid var(--border);}
+.stat:last-child{border-right:none;}
+.stat-v{font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--accent);line-height:1;display:block;}
+.stat-l{font-family:'Space Mono',monospace;font-size:8px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-top:2px;}
+.sec-lbl{font-family:'Space Mono',monospace;font-size:10px;color:var(--accent);letter-spacing:3px;text-transform:uppercase;margin-bottom:9px;display:flex;align-items:center;gap:8px;}
+.sec-lbl::after{content:'';flex:1;height:1px;background:var(--border);}
+.cats{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:20px;}
+.cat-btn{background:var(--surface);border:1px solid var(--border);color:var(--muted);font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;padding:7px 11px;cursor:pointer;text-transform:uppercase;transition:all 0.15s;}
+.cat-btn:hover{border-color:var(--accent);color:var(--accent);}
+.cat-btn.active{border-color:var(--accent);color:var(--bg);background:var(--accent);}
+.prog-wrap{margin-bottom:16px;}
+.prog-bar{height:3px;background:var(--surface2);border:1px solid var(--border);overflow:hidden;margin-top:6px;}
+.prog-fill{height:100%;transition:width 0.5s cubic-bezier(0.4,0,0.2,1);}
+.prog-fill.easy{background:linear-gradient(90deg,#00cc66,var(--green));}
+.prog-fill.medium{background:linear-gradient(90deg,var(--accent2),var(--accent));}
+.prog-fill.hard{background:linear-gradient(90deg,#cc2200,var(--accent2));}
+.tmr-wrap{margin-bottom:12px;display:none;}
+.tmr-wrap.show{display:block;}
+.tmr-bar{height:4px;background:var(--surface2);overflow:hidden;}
+.tmr-fill{height:100%;background:var(--accent2);transition:width 1s linear;}
+.tmr-lbl{font-family:'Space Mono',monospace;font-size:10px;color:var(--accent2);letter-spacing:2px;text-align:right;margin-top:3px;}
+.feedback{text-align:center;font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:4px;height:26px;margin-bottom:8px;}
+.feedback.correct{color:var(--green);}
+.feedback.wrong{color:var(--red);}
+.wi-card{background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--green);padding:14px 16px;margin-bottom:14px;display:none;animation:slideIn 0.3s ease;}
+.wi-card.show{display:block;}
+.wi-word{font-family:'Bebas Neue',sans-serif;font-size:30px;color:var(--green);letter-spacing:4px;margin-bottom:3px;}
+.wi-def{font-size:12px;color:var(--text);line-height:1.6;opacity:0.8;}
+.wi-tag{display:inline-block;font-family:'Space Mono',monospace;font-size:8px;letter-spacing:2px;padding:2px 6px;background:rgba(0,255,127,0.08);border:1px solid rgba(0,255,127,0.25);color:var(--green);text-transform:uppercase;margin-bottom:7px;}
+.g-card{background:var(--surface);border:1px solid var(--border);padding:26px 22px;margin-bottom:16px;position:relative;overflow:hidden;}
+.g-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+.g-card.easy::before{background:linear-gradient(90deg,var(--green),transparent);}
+.g-card.medium::before{background:linear-gradient(90deg,var(--accent2),var(--accent),transparent);}
+.g-card.hard::before{background:linear-gradient(90deg,var(--accent2),#ff9900,transparent);}
+.clue-lbl{font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:5px;}
+.clue-txt{font-size:13px;color:var(--text);letter-spacing:1px;margin-bottom:22px;line-height:1.5;border-left:2px solid var(--accent);padding-left:12px;}
+.clue-txt.no-hint{color:var(--muted);font-style:italic;border-left-color:var(--accent2);}
+.sc-disp{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;margin-bottom:22px;}
+.ans-row{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;margin-bottom:18px;min-height:56px;align-items:center;}
+.ltile{width:47px;height:52px;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--text);cursor:pointer;transition:all 0.12s;user-select:none;}
+.ltile:hover{border-color:var(--accent);color:var(--accent);transform:translateY(-3px);box-shadow:0 7px 18px rgba(232,255,0,0.1);}
+.ltile.sel{background:var(--accent);color:var(--bg);border-color:var(--accent);transform:translateY(-3px);}
+.ltile.used{opacity:0.16;pointer-events:none;transform:none;}
+.aslot{width:47px;height:52px;border:1px solid var(--border);background:transparent;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--accent);cursor:pointer;transition:all 0.12s;}
+.aslot:empty::after{content:'_';color:var(--border);font-size:20px;}
+.aslot:not(:empty){border-color:var(--accent);background:rgba(232,255,0,0.04);}
+.aslot:not(:empty):hover{border-color:var(--accent2);color:var(--accent2);}
+.btn-row{display:flex;gap:7px;flex-wrap:wrap;margin-top:6px;}
+.btn{flex:1;min-width:85px;padding:12px 11px;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;border:1px solid;cursor:pointer;transition:all 0.15s;}
+.btn-p{background:var(--accent);border-color:var(--accent);color:var(--bg);font-weight:700;}
+.btn-p:hover{background:transparent;color:var(--accent);}
+.btn-s{background:transparent;border-color:var(--border);color:var(--muted);}
+.btn-s:hover{border-color:var(--text);color:var(--text);}
+.btn-d{background:transparent;border-color:var(--accent2);color:var(--accent2);}
+.btn-d:hover{background:var(--accent2);color:var(--bg);}
+.go-card{display:none;text-align:center;padding:36px 22px;background:var(--surface);border:1px solid var(--border);position:relative;overflow:hidden;}
+.go-card::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(232,255,0,0.04) 0%,transparent 70%);}
+.go-card.show{display:block;}
+.go-card h2{font-family:'Bebas Neue',sans-serif;font-size:58px;letter-spacing:8px;color:var(--accent);margin-bottom:4px;}
+.go-pname{font-family:'Space Mono',monospace;font-size:12px;color:var(--muted);margin-bottom:4px;}
+.go-pname strong{color:var(--text);font-size:16px;}
+.fs-row{display:flex;gap:2px;margin:18px 0;border:1px solid var(--border);overflow:hidden;}
+.fs-stat{flex:1;background:var(--surface2);padding:13px 6px;text-align:center;border-right:1px solid var(--border);}
+.fs-stat:last-child{border-right:none;}
+.fs-val{font-family:'Bebas Neue',sans-serif;font-size:30px;line-height:1;display:block;}
+.fs-val.g{color:var(--green);}.fs-val.r{color:var(--accent2);}.fs-val.y{color:var(--accent);}
+.fs-lbl{font-family:'Space Mono',monospace;font-size:8px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-top:3px;}
+.go-btns{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:18px;}
+.go-btns .btn{flex:none;min-width:130px;}
+::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-track{background:var(--bg);}::-webkit-scrollbar-thumb{background:var(--border);}
+@media(max-width:500px){.ltile,.aslot{width:38px;height:44px;font-size:18px;}.g-card{padding:16px 12px;}.lv-card{width:118px;}.lb-date,.lb-table th:last-child,.lb-table td:last-child{display:none;}}
+</style>
+</head>
+<body>
+
+<!-- ===== SCREEN 1: NAME ENTRY ===== -->
+<div class="screen" id="nameScreen">
+  <div class="ne-tag">// Educational Word Game</div>
+  <div class="ne-title"><span class="yp">WORD</span>SCRAMBLE</div>
+  <p class="ne-sub">Build vocabulary &middot; Test your knowledge</p>
+  <div class="ne-box">
+    <div class="ne-label">// Enter Your Name</div>
+    <input class="ne-input" id="pni" type="text" placeholder="TYPE YOUR NAME..." maxlength="20" autocomplete="off" onkeydown="if(event.key==='Enter')cfn()"/>
+    <div class="ne-err" id="nfe"></div>
+    <button class="ne-btn" onclick="cfn()">CONTINUE &#8594;</button>
+  </div>
+  <div class="ne-footer">&#169; 2024&#8211;2026 <span>Loyd Webs</span> &#8212; All Rights Reserved</div>
+</div>
+
+<!-- ===== SCREEN 2: LEVEL SELECT ===== -->
+<div class="screen hidden" id="splashScreen">
+  <div class="sp-by">Created by <span>Loyd Webs</span></div>
+  <div class="sp-welcome">WELCOME, <em id="wname">PLAYER</em>!</div>
+  <div class="sp-title"><span class="yp">WORD</span>SCRAMBLE</div>
+  <p class="sp-sub">Select difficulty and start playing</p>
+  <div class="lv-label">// Choose Difficulty</div>
+  <div class="lv-cards">
+    <div class="lv-card easy" onclick="selLv('easy')">
+      <span class="lv-icon">&#127807;</span>
+      <span class="lv-name">Easy</span>
+      <span class="lv-desc">Short words<br>Hints shown<br>No timer<br>x1 points</span>
+    </div>
+    <div class="lv-card medium" onclick="selLv('medium')">
+      <span class="lv-icon">&#9889;</span>
+      <span class="lv-name">Medium</span>
+      <span class="lv-desc">Longer words<br>Hints shown<br>No timer<br>x2 points</span>
+    </div>
+    <div class="lv-card hard" onclick="selLv('hard')">
+      <span class="lv-icon">&#128293;</span>
+      <span class="lv-name">Hard</span>
+      <span class="lv-desc">Hard words<br>No hints<br>&#9201; 30s timer<br>x3 points</span>
+    </div>
+  </div>
+  <div class="sp-btns">
+    <button class="play-btn" id="playBtn" onclick="launch()" disabled>&#9654; PLAY</button>
+    <button class="ol-btn" onclick="showLB()">&#127942; SCOREBOARD</button>
+  </div>
+  <div class="sp-footer">&#169; 2024&#8211;2026 <span>Loyd Webs</span> &#8212; All Rights Reserved</div>
+</div>
+
+<!-- ===== SCREEN 3: LEADERBOARD ===== -->
+<div class="screen hidden" id="lbScreen">
+  <div class="lb-hdr">
+    <div class="lb-title">&#127942; PLAYER SCORES</div>
+    <button class="back-btn" onclick="showSplash()">&#8592; BACK</button>
+  </div>
+  <div id="lbContent" style="width:100%;max-width:740px;"></div>
+  <button class="lb-clear" onclick="clrLB()">&#128465; CLEAR ALL SCORES</button>
+</div>
+
+<!-- ===== GAME WRAPPER ===== -->
+<div id="gw">
+<div class="con">
+  <div class="g-hdr">
+    <div class="g-hdr-l">
+      <button class="back-menu" onclick="backMenu()">&#8592; MENU</button>
+      <div>
+        <div class="g-brand"><span>WORD</span>SCRAMBLE</div>
+        <div id="db" class="diff-badge"></div>
+      </div>
+    </div>
+    <div class="g-right">
+      <div class="g-creator"><strong>Loyd Webs</strong>Developer / Creator</div>
+      <div class="g-player">Player: <span id="hpn">&#8212;</span></div>
+    </div>
+  </div>
+
+  <div class="stats-bar">
+    <div class="stat"><span class="stat-v" id="sv">0</span><span class="stat-l">Score</span></div>
+    <div class="stat"><span class="stat-v" id="wv">1</span><span class="stat-l">Word</span></div>
+    <div class="stat"><span class="stat-v" id="stv">0</span><span class="stat-l">Streak</span></div>
+    <div class="stat"><span class="stat-v" id="hv">3</span><span class="stat-l">Hints</span></div>
+  </div>
+
+  <div class="sec-lbl" style="margin-bottom:8px;">Category</div>
+  <div class="cats" id="cats"></div>
+
+  <div class="prog-wrap">
+    <div class="sec-lbl">Progress <span id="pl" style="color:var(--muted);font-family:'Courier Prime';text-transform:none;letter-spacing:0;font-size:11px;">1 / 10</span></div>
+    <div class="prog-bar"><div class="prog-fill" id="pf" style="width:10%"></div></div>
+  </div>
+
+  <div class="tmr-wrap" id="tw">
+    <div class="tmr-bar"><div class="tmr-fill" id="tf" style="width:100%"></div></div>
+    <div class="tmr-lbl" id="tl">30s</div>
+  </div>
+
+  <div class="feedback" id="fb"></div>
+
+  <div class="wi-card" id="wic">
+    <div class="wi-tag" id="witag"></div>
+    <div class="wi-word" id="wiw"></div>
+    <div class="wi-def" id="wid"></div>
+  </div>
+
+  <div class="g-card" id="gc">
+    <div class="clue-lbl">// CLUE</div>
+    <div class="clue-txt" id="ct">Loading...</div>
+    <div class="sec-lbl">Your Answer</div>
+    <div class="ans-row" id="ar"></div>
+    <div class="sec-lbl">Scrambled Letters</div>
+    <div class="sc-disp" id="sd"></div>
+    <div class="btn-row" style="margin-top:7px;">
+      <button class="btn btn-s" id="hintBtn" onclick="useHint()">// HINT</button>
+      <button class="btn btn-s" onclick="clrAns()">CLEAR</button>
+      <button class="btn btn-p" onclick="chkAns()">SUBMIT &#8594;</button>
+    </div>
+    <div class="btn-row" style="margin-top:6px;">
+      <button class="btn btn-d" onclick="skip()">SKIP</button>
+      <button class="btn btn-s" onclick="shuffTiles()">SHUFFLE</button>
+    </div>
+  </div>
+
+  <div class="go-card" id="goc">
+    <h2>GAME OVER</h2>
+    <div class="go-pname">Player: <strong id="gpn">&#8212;</strong></div>
+    <div class="fs-row">
+      <div class="fs-stat"><span class="fs-val y" id="fsc">0</span><span class="fs-lbl">Score</span></div>
+      <div class="fs-stat"><span class="fs-val g" id="fco">0</span><span class="fs-lbl">Correct</span></div>
+      <div class="fs-stat"><span class="fs-val r" id="fwr">0</span><span class="fs-lbl">Wrong / Skip</span></div>
+    </div>
+    <div class="go-btns">
+      <button class="btn btn-p" onclick="restart()">PLAY AGAIN &#8594;</button>
+      <button class="btn btn-s" onclick="backMenu()">&#8592; MENU</button>
+      <button class="btn btn-s" onclick="showLBg()">&#127942; SCORES</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+// ===================== WORD BANK =====================
+const WB = {
+  Science:{
+    easy:[
+      {w:"ATOM",h:"The smallest unit of a chemical element.",d:"An atom is the basic building block of matter, consisting of a nucleus and electrons."},
+      {w:"CELL",h:"The basic structural unit of all living organisms.",d:"A cell is the smallest unit of life capable of independent existence."},
+      {w:"STEM",h:"The main stalk of a plant.",d:"The stem supports the plant and transports water and nutrients between roots and leaves."},
+      {w:"ACID",h:"A substance with a pH lower than 7.",d:"Acids donate hydrogen ions in solution and typically have a sour taste."},
+      {w:"HEAT",h:"Energy transferred between objects due to temperature difference.",d:"Heat is thermal energy in transfer from a warmer object to a cooler one."},
+      {w:"BONE",h:"A rigid organ that forms the skeleton.",d:"Bones provide structure, protect organs, and allow movement in vertebrates."},
+      {w:"LENS",h:"A transparent object that bends (refracts) light.",d:"A lens focuses or diverges light rays, used in glasses, cameras, and telescopes."},
+      {w:"VEIN",h:"A blood vessel that carries blood toward the heart.",d:"Veins carry deoxygenated blood from the body back to the heart."},
+      {w:"MOON",h:"Earth's natural satellite.",d:"The Moon orbits Earth and is responsible for ocean tides and eclipses."},
+      {w:"IRON",h:"A metallic element essential to blood.",d:"Iron is vital for hemoglobin in red blood cells, which carries oxygen."},
+    ],
+    medium:[
+      {w:"PHOTON",h:"A particle representing a quantum of light.",d:"A photon is the basic unit of light and all electromagnetic radiation."},
+      {w:"NUCLEUS",h:"The dense, positively charged center of an atom.",d:"The nucleus contains protons and neutrons and is at the center of an atom."},
+      {w:"ENZYME",h:"A biological catalyst that speeds up chemical reactions.",d:"Enzymes are proteins that accelerate chemical reactions in living cells."},
+      {w:"OSMOSIS",h:"Movement of water through a semipermeable membrane.",d:"Osmosis is water moving from low to high solute concentration through a membrane."},
+      {w:"GRAVITY",h:"Force that attracts objects with mass toward each other.",d:"Gravity is a fundamental force proportional to the mass of objects."},
+      {w:"PLASMA",h:"The fourth state of matter — a hot ionized gas.",d:"Plasma is ionized gas found in stars, lightning, and fluorescent lights."},
+      {w:"NEUTRON",h:"A subatomic particle with no electric charge.",d:"Neutrons have no charge and are found in the nuclei of most atoms."},
+      {w:"MITOSIS",h:"Cell division that produces two identical daughter cells.",d:"Mitosis results in two genetically identical daughter cells used for growth and repair."},
+      {w:"CARBON",h:"A nonmetallic element essential to all living organisms.",d:"Carbon is element 6, the backbone of all organic molecules and life on Earth."},
+      {w:"VACCINE",h:"Substance used to stimulate production of antibodies.",d:"A vaccine introduces a weakened or inactivated pathogen to trigger immune memory."},
+    ],
+    hard:[
+      {w:"PHOTOSYNTHESIS",h:"Plants convert sunlight into food using this process.",d:"Photosynthesis uses sunlight, water, and CO2 to produce glucose and oxygen in plant cells."},
+      {w:"THERMODYNAMICS",h:"Branch of physics dealing with heat and energy.",d:"Thermodynamics studies the relationships between heat, work, and energy in systems."},
+      {w:"CHROMOSOME",h:"Thread-like structure in the cell nucleus carrying genetic info.",d:"Chromosomes are made of DNA and proteins; humans have 46 chromosomes in each cell."},
+      {w:"REFRACTION",h:"The bending of light passing from one medium to another.",d:"Refraction occurs when light changes direction as it enters a medium with different density."},
+      {w:"EVAPORATION",h:"The process of a liquid turning into vapor.",d:"Evaporation occurs when molecules on a liquid's surface gain enough energy to escape as gas."},
+      {w:"RESPIRATORY",h:"Relating to the process of breathing.",d:"The respiratory system includes lungs, bronchi, and trachea to exchange oxygen and CO2."},
+      {w:"GEOTHERMAL",h:"Heat energy generated and stored in the Earth.",d:"Geothermal energy comes from heat within the Earth and can be used to generate electricity."},
+      {w:"ATMOSPHERIC",h:"Relating to the layer of gases surrounding the Earth.",d:"Atmospheric pressure, weather, and composition all affect life and climate on Earth."},
+      {w:"BIODIVERSITY",h:"The variety of life found in a habitat or on Earth.",d:"Biodiversity measures the number and variety of species, genes, and ecosystems in an area."},
+      {w:"ELECTROMAGNETIC",h:"Relating to the interaction of electric and magnetic fields.",d:"Electromagnetic phenomena include light, radio waves, X-rays, and magnetic forces."},
+    ],
+  },
+  Math:{
+    easy:[
+      {w:"SUM",h:"The result of adding numbers together.",d:"A sum is the total obtained by adding two or more numbers together."},
+      {w:"ODD",h:"A number that cannot be divided evenly by two.",d:"Odd numbers leave a remainder of 1 when divided by 2. Examples: 1, 3, 5, 7."},
+      {w:"EVEN",h:"A number divisible by two with no remainder.",d:"Even numbers are exactly divisible by 2. Examples: 2, 4, 6, 8."},
+      {w:"AREA",h:"The amount of space inside a 2D shape.",d:"Area measures the surface enclosed within a shape, expressed in square units."},
+      {w:"CUBE",h:"A 3D shape with six equal square faces.",d:"A cube has 6 faces, 12 edges, and 8 vertices, with all sides being equal."},
+      {w:"HALF",h:"One of two equal parts.",d:"Half is the result of dividing something into two equal portions, written as 1/2 or 0.5."},
+      {w:"RATIO",h:"A comparison of two quantities.",d:"A ratio shows the relative size of two values, written as a:b or a/b."},
+      {w:"GRAPH",h:"A visual representation of data or a mathematical function.",d:"Graphs display data or equations visually using axes and plotted points or lines."},
+      {w:"ANGLE",h:"The space between two lines that meet at a point.",d:"Angles are measured in degrees and are fundamental in geometry and trigonometry."},
+      {w:"DIGIT",h:"Any one of the ten numerals (0-9).",d:"Digits are the symbols used to write numbers in the decimal system."},
+    ],
+    medium:[
+      {w:"FRACTION",h:"A numerical quantity that is not a whole number.",d:"A fraction represents a part of a whole, written as numerator over denominator."},
+      {w:"POLYGON",h:"A closed plane figure with three or more straight sides.",d:"Polygons include triangles, squares, pentagons, and hexagons."},
+      {w:"DECIMAL",h:"A number using base 10 with a decimal point.",d:"Decimals express fractional amounts using place value after the decimal point."},
+      {w:"RADIUS",h:"The distance from a circle's center to its edge.",d:"The radius is half the diameter of a circle and key to calculating area and circumference."},
+      {w:"ALGEBRA",h:"Math using symbols to represent unknown values.",d:"Algebra uses letters and symbols to represent numbers and express mathematical relationships."},
+      {w:"MATRIX",h:"A rectangular array of numbers in rows and columns.",d:"Matrices are used in linear algebra to solve equations and represent transformations."},
+      {w:"VECTOR",h:"A quantity with both magnitude and direction.",d:"Vectors are used in physics and math to represent forces, velocity, and displacement."},
+      {w:"FACTOR",h:"A number that divides another number exactly.",d:"Factors of 12 are 1, 2, 3, 4, 6, and 12 — each divides without remainder."},
+      {w:"MEDIAN",h:"The middle value in a sorted set of numbers.",d:"The median is the central number in a data set when values are arranged in order."},
+      {w:"VOLUME",h:"The amount of 3D space an object occupies.",d:"Volume is measured in cubic units and represents the capacity inside a 3D shape."},
+    ],
+    hard:[
+      {w:"HYPOTENUSE",h:"The longest side of a right triangle, opposite the right angle.",d:"The hypotenuse satisfies the Pythagorean theorem: a squared plus b squared equals c squared."},
+      {w:"CIRCUMFERENCE",h:"The perimeter (distance around) a circle.",d:"Circumference equals pi times diameter (pi*d) or 2*pi*r for a circle with radius r."},
+      {w:"DENOMINATOR",h:"The bottom number in a fraction.",d:"The denominator represents the total number of equal parts a whole is divided into."},
+      {w:"PERPENDICULAR",h:"Lines that intersect at a 90-degree right angle.",d:"Perpendicular lines form a right angle (90 degrees) at their intersection point."},
+      {w:"PROBABILITY",h:"The likelihood of an event occurring, from 0 to 1.",d:"Probability is measured from 0 (impossible) to 1 (certain); favorable divided by total outcomes."},
+      {w:"COEFFICIENT",h:"The numerical factor in a term of an algebraic expression.",d:"In 3x squared, the coefficient is 3 — it multiplies the variable part."},
+      {w:"QUADRILATERAL",h:"A polygon with exactly four sides.",d:"Quadrilaterals include squares, rectangles, parallelograms, rhombuses, and trapezoids."},
+      {w:"EXPONENTIAL",h:"Relating to a function involving a variable as an exponent.",d:"Exponential growth or decay follows the pattern y equals a to the power of x."},
+      {w:"TRIGONOMETRY",h:"The branch of math dealing with triangles and angles.",d:"Trigonometry studies relationships between angles and sides of triangles using sin, cos, and tan."},
+      {w:"DIFFERENTIAL",h:"Relating to the mathematical study of rates of change (calculus).",d:"Differential calculus analyzes how functions change, using derivatives to find rates and slopes."},
+    ],
+  },
+  History:{
+    easy:[
+      {w:"WAR",h:"An armed conflict between nations or groups.",d:"War is organized conflict between states or groups, often causing significant destruction."},
+      {w:"KING",h:"A male ruler of a kingdom.",d:"A king is the male sovereign ruler of a kingdom, usually inheriting the title."},
+      {w:"FLAG",h:"A piece of cloth used as a symbol of a nation.",d:"Flags are national symbols with specific colors and designs representing countries or groups."},
+      {w:"VOTE",h:"The act of choosing a leader through an election.",d:"Voting is the process by which citizens choose their representatives in a democracy."},
+      {w:"GOLD",h:"A precious metal used as currency throughout history.",d:"Gold has been used as money, jewelry, and a symbol of wealth for thousands of years."},
+      {w:"ARMY",h:"A large organized military land force.",d:"An army is a large body of soldiers organized for warfare on land."},
+      {w:"ROME",h:"The ancient city that was the center of a vast empire.",d:"Rome was the capital of the Roman Empire, one of the greatest civilizations in history."},
+      {w:"SLAVE",h:"A person who is the property of another and forced to work.",d:"Slavery is the forced labor and ownership of a person, practiced in many ancient and modern societies."},
+      {w:"TRADE",h:"The exchange of goods or services between people or nations.",d:"Trade has connected civilizations for thousands of years, spreading culture and wealth."},
+      {w:"SIEGE",h:"A military operation to surround and capture a fortified place.",d:"Sieges cut off a city from supplies and reinforcements to force surrender."},
+    ],
+    medium:[
+      {w:"EMPIRE",h:"A group of territories under a single authority.",d:"An empire is a large political unit comprising many territories ruled by one sovereign power."},
+      {w:"DYNASTY",h:"A succession of rulers from the same family.",d:"A dynasty passes power from parent to child across multiple generations."},
+      {w:"TREATY",h:"A formal agreement between two or more states.",d:"Treaties are legally binding international agreements, often ending wars or establishing alliances."},
+      {w:"COLONY",h:"A country or area controlled by another nation.",d:"Colonies were established by European powers across Africa, Asia, and the Americas."},
+      {w:"FEUDAL",h:"Relating to the medieval system of lords and vassals.",d:"Feudalism was a medieval hierarchy where land was exchanged for military service."},
+      {w:"PHARAOH",h:"The title for rulers of ancient Egypt.",d:"Pharaohs were considered gods on Earth and ruled Egypt politically and religiously."},
+      {w:"CRUSADE",h:"A medieval religious military expedition.",d:"The Crusades (1095-1291) were wars in which European Christians fought to control Jerusalem."},
+      {w:"REPUBLIC",h:"A state where supreme power is held by elected representatives.",d:"A republic is governed by elected officials who represent the people's interests."},
+      {w:"NOMAD",h:"A member of a people who travel from place to place.",d:"Nomadic peoples follow seasonal food sources rather than settling permanently in one place."},
+      {w:"SENATE",h:"A governing or legislative body in ancient Rome.",d:"The Roman Senate was the governing council that made laws and guided foreign policy."},
+    ],
+    hard:[
+      {w:"REVOLUTION",h:"A forcible overthrow of an existing government or system.",d:"Revolutions bring fundamental change to political power or social order, often through conflict."},
+      {w:"DEMOCRACY",h:"Government by the people through elected representatives.",d:"Democracy allows citizens to vote for representatives and participate in governance."},
+      {w:"IMPERIALISM",h:"A policy of extending power through colonization or force.",d:"Imperialism involves one nation dominating others economically, politically, or militarily."},
+      {w:"RENAISSANCE",h:"The European cultural revival of art and learning (14th-17th century).",d:"The Renaissance was a period of cultural rebirth in Europe marked by advances in art, science, and philosophy."},
+      {w:"CONSTITUTION",h:"The fundamental law of a nation, defining rights and governance.",d:"A constitution is the supreme legal document establishing principles and structure of government."},
+      {w:"CIVILIZATION",h:"A complex human society with culture, cities, and government.",d:"Civilizations develop writing, laws, trade, architecture, and division of labor."},
+      {w:"COLONIALISM",h:"The practice of acquiring and maintaining colonies.",d:"Colonialism involves one nation controlling another's land, people, and resources for economic gain."},
+      {w:"NATIONALISM",h:"Strong identification with one's nation and its interests.",d:"Nationalism is the belief that one's nation should be independent and self-governing."},
+      {w:"ENLIGHTENMENT",h:"An 18th-century intellectual movement emphasizing reason and individual rights.",d:"The Enlightenment promoted ideas of liberty, democracy, and scientific reasoning that shaped modern societies."},
+      {w:"INDUSTRIALIZATION",h:"Transformation from agriculture to large-scale manufacturing.",d:"Industrialization brought factories, urbanization, and mass production in the 18th-19th centuries."},
+    ],
+  },
+  Geography:{
+    easy:[
+      {w:"LAKE",h:"A large inland body of still water.",d:"Lakes are large bodies of water surrounded by land, fed by rivers, rain, or groundwater."},
+      {w:"HILL",h:"A naturally raised area of land, smaller than a mountain.",d:"Hills are elevated landforms rising above surrounding terrain but lower than mountains."},
+      {w:"RAIN",h:"Water droplets falling from clouds.",d:"Rain is precipitation in the form of liquid water, essential for ecosystems and agriculture."},
+      {w:"WIND",h:"The movement of air from high to low pressure areas.",d:"Wind is caused by differences in atmospheric pressure and shapes weather and climate."},
+      {w:"CAVE",h:"A natural underground hollow in rock or earth.",d:"Caves form through erosion, volcanic activity, or dissolution of rock like limestone."},
+      {w:"ISLAND",h:"A piece of land surrounded on all sides by water.",d:"Islands can be oceanic (volcanic) or continental, ranging from tiny rocks to Greenland."},
+      {w:"RIVER",h:"A large natural flow of fresh water.",d:"Rivers flow from highlands to the sea, shaping landscapes and providing fresh water."},
+      {w:"COAST",h:"The land along the edge of the sea.",d:"Coasts are where land meets ocean and are shaped by waves, tides, and erosion."},
+      {w:"STORM",h:"A violent disturbance of the atmosphere with wind and rain.",d:"Storms include thunderstorms, hurricanes, and blizzards caused by atmospheric instability."},
+      {w:"PLAIN",h:"A large flat area of land.",d:"Plains are flat, low-lying areas often fertile for farming and supporting large populations."},
+    ],
+    medium:[
+      {w:"EQUATOR",h:"The imaginary line dividing Earth into two hemispheres.",d:"The equator is the 0 degree latitude line at Earth's widest point, equidistant from both poles."},
+      {w:"PLATEAU",h:"A flat area of high ground — also called a tableland.",d:"Plateaus are elevated flat stretches of land, often formed by volcanic or tectonic activity."},
+      {w:"TUNDRA",h:"A vast, flat, treeless Arctic region with permafrost.",d:"Tundra is a cold biome with permafrost, low vegetation, and short growing seasons."},
+      {w:"CANYON",h:"A deep gorge typically carved by a river.",d:"Canyons are deep valleys with steep rocky sides, formed by erosion over millions of years."},
+      {w:"MONSOON",h:"A seasonal wind pattern that brings heavy rainfall.",d:"Monsoons bring heavy rains to South and Southeast Asia annually, critical for agriculture."},
+      {w:"GLACIER",h:"A slowly moving mass of ice formed from compacted snow.",d:"Glaciers form over centuries from accumulated snowfall and carve valleys as they move."},
+      {w:"SAVANNA",h:"A flat tropical grassland with scattered trees.",d:"A savanna is a mixed woodland-grassland ecosystem found in tropical regions, especially Africa."},
+      {w:"DELTA",h:"A landform where a river meets the sea and deposits sediment.",d:"River deltas form triangular deposits of sediment at river mouths, creating fertile land."},
+      {w:"TROPIC",h:"Either of two latitudes about 23.5 degrees north or south of the equator.",d:"The Tropics of Cancer and Capricorn mark the boundaries of the tropical zone."},
+      {w:"TERRAIN",h:"A stretch of land with particular physical characteristics.",d:"Terrain describes the physical features of land such as mountains, plains, and valleys."},
+    ],
+    hard:[
+      {w:"PENINSULA",h:"A piece of land almost surrounded by water.",d:"A peninsula is surrounded by water on three sides but connected to the mainland on one."},
+      {w:"ARCHIPELAGO",h:"A group or chain of islands.",d:"An archipelago is a scattered group of islands like the Philippines or Indonesia."},
+      {w:"LATITUDE",h:"Angular distance north or south of the equator.",d:"Latitude is measured in degrees from 0 at the equator to 90 degrees at the poles."},
+      {w:"LONGITUDE",h:"Angular distance east or west of the prime meridian.",d:"Longitude measures east-west position, with the prime meridian at 0 degrees through Greenwich."},
+      {w:"TOPOGRAPHY",h:"The arrangement of natural and artificial features of an area.",d:"Topography describes the shape and features of land surfaces, shown on contour maps."},
+      {w:"PRECIPITATION",h:"Any form of water that falls from clouds to Earth's surface.",d:"Precipitation includes rain, snow, hail, and sleet, all part of the water cycle."},
+      {w:"STRATOSPHERE",h:"The second layer of Earth's atmosphere, containing the ozone layer.",d:"The stratosphere extends from 12 to 50 km above Earth and contains ozone that blocks UV rays."},
+      {w:"DEFORESTATION",h:"The clearing of trees from a large area of forest.",d:"Deforestation destroys habitats, increases CO2, and leads to soil erosion and climate change."},
+      {w:"URBANIZATION",h:"The process by which more people come to live in cities.",d:"Urbanization shifts populations from rural areas to cities, driven by economic opportunity."},
+      {w:"CONTINENTAL",h:"Relating to a large landmass (continent).",d:"Continental drift describes how continents move on tectonic plates over geological time."},
+    ],
+  },
+  English:{
+    easy:[
+      {w:"VERB",h:"A word that describes an action or state of being.",d:"Verbs express actions (run, eat) or states (is, seem) and are the core of every sentence."},
+      {w:"NOUN",h:"A word that names a person, place, thing, or idea.",d:"Nouns identify people (teacher), places (school), things (book), or concepts (freedom)."},
+      {w:"POEM",h:"A piece of writing with rhythm, often using imagery.",d:"Poems use language artistically, often with meter, rhyme, and figurative language."},
+      {w:"PLOT",h:"The sequence of events in a story.",d:"The plot is the structured series of events that make up the narrative of a story."},
+      {w:"THEME",h:"The central message or idea of a literary work.",d:"Theme is the underlying meaning or life lesson explored in a story, poem, or novel."},
+      {w:"PROSE",h:"Ordinary written language, without a metrical structure.",d:"Prose is regular written or spoken language not arranged in verse, used in novels and essays."},
+      {w:"COMMA",h:"A punctuation mark (,) used to separate parts of a sentence.",d:"Commas create pauses in sentences and separate items in lists, clauses, and phrases."},
+      {w:"TONE",h:"The attitude or feeling conveyed by the writer's choice of words.",d:"Tone reflects the author's attitude toward the subject, such as sarcastic, joyful, or somber."},
+      {w:"DRAFT",h:"An early version of a piece of writing.",d:"A draft is a preliminary version of written work that will be revised and improved."},
+      {w:"RHYME",h:"When two or more words end with the same sound.",d:"Rhyme is the correspondence of sound between words, especially used in poetry."},
+    ],
+    medium:[
+      {w:"METAPHOR",h:"A figure of speech comparing two unlike things directly.",d:"Metaphors state one thing is another to imply similarity, e.g. Life is a journey."},
+      {w:"SYNONYM",h:"A word with the same or similar meaning as another.",d:"Synonyms have the same meaning, like happy and joyful or big and large."},
+      {w:"PRONOUN",h:"A word used in place of a noun — like he, she, or they.",d:"Pronouns replace nouns to avoid repetition. Types include personal, possessive, and reflexive."},
+      {w:"DIALECT",h:"A form of language specific to a region or social group.",d:"A dialect is a variety of a language distinguished by vocabulary, grammar, and pronunciation."},
+      {w:"SYLLABLE",h:"A unit of pronunciation containing one vowel sound.",d:"Words are made of syllables; elephant has three: el-e-phant."},
+      {w:"SIMILE",h:"A comparison using like or as.",d:"Similes compare two things using like or as, e.g. brave as a lion."},
+      {w:"CLAUSE",h:"A group of words containing a subject and a verb.",d:"Clauses can be independent (complete sentences) or dependent (part of a sentence)."},
+      {w:"IRONY",h:"When the intended meaning is opposite to the literal meaning.",d:"Irony is a literary device where words convey the opposite of their literal meaning."},
+      {w:"GENRE",h:"A category or style of artistic composition.",d:"Genres include fiction, nonfiction, poetry, drama, and their sub-categories."},
+      {w:"IMAGERY",h:"Descriptive language that appeals to the senses.",d:"Imagery creates vivid mental pictures through sensory description in writing."},
+    ],
+    hard:[
+      {w:"ONOMATOPOEIA",h:"Words that imitate the sounds they describe, like buzz or sizzle.",d:"Onomatopoeia is a word that phonetically imitates the sound it represents, e.g. crash or murmur."},
+      {w:"PERSONIFICATION",h:"Giving human qualities to non-human things.",d:"Personification attributes human traits to objects or abstract ideas, e.g. The sun smiled down."},
+      {w:"ALLITERATION",h:"Repetition of the same consonant sound at the start of nearby words.",d:"Alliteration creates rhythm and emphasis, e.g. Peter Piper picked a peck of pickled peppers."},
+      {w:"FORESHADOWING",h:"A hint in a story about what will happen later.",d:"Foreshadowing is a literary device that gives clues about future events in the narrative."},
+      {w:"HYPERBOLE",h:"An exaggerated statement not meant to be taken literally.",d:"Hyperbole is extreme exaggeration for effect, e.g. I've told you a million times."},
+      {w:"OXYMORON",h:"A phrase combining two contradictory terms.",d:"Oxymorons pair contradictory words for effect, like deafening silence or living death."},
+      {w:"JUXTAPOSITION",h:"Placing contrasting ideas or images side by side.",d:"Juxtaposition contrasts two elements to highlight their differences and create meaning."},
+      {w:"CONNOTATION",h:"The emotional or cultural meaning associated with a word.",d:"Connotations are the implied feelings beyond a word's literal definition."},
+      {w:"ANTHROPOMORPHISM",h:"Attributing human characteristics to animals, gods, or objects.",d:"Anthropomorphism portrays non-human entities with human traits, common in fables and myths."},
+      {w:"SOLILOQUY",h:"A speech where a character speaks their thoughts aloud while alone on stage.",d:"A soliloquy reveals a character's inner thoughts directly to the audience in drama."},
+    ],
+  },
+};
+
+const CATS = Object.keys(WB);
+const LVC = {
+  easy:  {hints:5, timer:0,  showHint:true,  total:8,  mult:1},
+  medium:{hints:3, timer:0,  showHint:true,  total:10, mult:2},
+  hard:  {hints:0, timer:30, showHint:false, total:10, mult:3},
+};
+
+let pname='', clv=null, ccat=CATS[0];
+let wq=[], cw=null, sl=[], ui=[];
+let score=0, streak=0, wnum=1, hints=3, total=10, active=true;
+let ti=null, tleft=30, cor=0, wrg=0;
+
+// ===== LEADERBOARD =====
+function getLB(){try{return JSON.parse(localStorage.getItem('ws_lb2')||'[]');}catch{return[];}}
+function saveLB(e){const lb=getLB();lb.push(e);lb.sort((a,b)=>b.score-a.score);if(lb.length>100)lb.splice(100);localStorage.setItem('ws_lb2',JSON.stringify(lb));}
+function clrLB(){if(confirm('Clear all player scores? This cannot be undone.')){localStorage.removeItem('ws_lb2');renderLB();}}
+function escH(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+function renderLB(){
+  const lb=getLB(), el=document.getElementById('lbContent');
+  if(!lb.length){
+    el.innerHTML='<div class="lb-empty"><strong>NO SCORES YET</strong>Play a game to appear here!</div>';
+    return;
+  }
+  let rows=lb.map((e,i)=>{
+    const rc=i===0?'gold':i===1?'silver':i===2?'bronze':'';
+    const ri=i===0?'&#127945;':i===1?'&#129352;':i===2?'&#129353;':'#'+(i+1);
+    return '<tr>'
+      +'<td class="lb-rank '+rc+'">'+ri+'</td>'
+      +'<td class="lb-name">'+escH(e.name)+'</td>'
+      +'<td><span class="lb-lvtag '+e.level+'">'+e.level+'</span></td>'
+      +'<td class="lb-score">'+e.score+'</td>'
+      +'<td class="lb-correct">&#10003; '+e.correct+'</td>'
+      +'<td class="lb-wrong">&#10007; '+e.wrong+'</td>'
+      +'<td class="lb-date">'+escH(e.date)+'</td>'
+      +'</tr>';
+  }).join('');
+  el.innerHTML='<table class="lb-table"><thead><tr>'
+    +'<th>#</th><th>Name</th><th>Level</th>'
+    +'<th class="r">Score</th><th class="r">Correct</th><th class="r">Wrong/Skip</th><th>Date</th>'
+    +'</tr></thead><tbody>'+rows+'</tbody></table>';
+}
+
+// ===== SCREEN MANAGEMENT =====
+function showScr(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden'));
+  document.getElementById('gw').style.display='none';
+  if(id) document.getElementById(id).classList.remove('hidden');
+}
+
+function cfn(){
+  const v=document.getElementById('pni').value.trim();
+  const err=document.getElementById('nfe');
+  const inp=document.getElementById('pni');
+  if(!v||v.length<2){
+    err.textContent='Please enter at least 2 characters.';
+    inp.classList.add('error');
+    setTimeout(()=>inp.classList.remove('error'),500);
+    return;
+  }
+  err.textContent='';
+  pname=v.toUpperCase();
+  document.getElementById('wname').textContent=pname;
+  document.getElementById('hpn').textContent=pname;
+  document.getElementById('gpn').textContent=pname;
+  showScr('splashScreen');
+}
+
+function selLv(lv){
+  clv=lv;
+  document.querySelectorAll('.lv-card').forEach(c=>c.classList.remove('sel'));
+  document.querySelector('.lv-card.'+lv).classList.add('sel');
+  document.getElementById('playBtn').disabled=false;
+}
+
+function launch(){
+  if(!clv)return;
+  showScr(null);
+  document.getElementById('gw').style.display='block';
+  initGame();
+}
+
+function backMenu(){
+  clrTmr();
+  clv=null;
+  document.getElementById('playBtn').disabled=true;
+  document.querySelectorAll('.lv-card').forEach(c=>c.classList.remove('sel'));
+  showScr('splashScreen');
+}
+
+function showLB(){ renderLB(); showScr('lbScreen'); }
+function showLBg(){ clrTmr(); renderLB(); showScr('lbScreen'); }
+function showSplash(){ showScr('splashScreen'); }
+
+// ===== GAME INIT =====
+function initGame(){
+  const c=LVC[clv];
+  hints=c.hints; total=c.total;
+  score=0; streak=0; wnum=1; cor=0; wrg=0;
+  const db=document.getElementById('db');
+  db.textContent=clv.toUpperCase(); db.className='diff-badge '+clv;
+  document.getElementById('gc').className='g-card '+clv;
+  document.getElementById('pf').className='prog-fill '+clv;
+  if(c.timer>0) document.getElementById('tw').classList.add('show');
+  else document.getElementById('tw').classList.remove('show');
+  document.getElementById('hintBtn').style.display=c.hints>0?'':'none';
+  updStats(); initCats(); buildQ(); startGame();
+}
+
+// ===== HELPERS =====
+function shufArr(arr){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+function initCats(){
+  const c=document.getElementById('cats'); c.innerHTML='';
+  CATS.forEach(cat=>{
+    const b=document.createElement('button');
+    b.className='cat-btn'+(cat===ccat?' active':'');
+    b.textContent=cat;
+    b.onclick=()=>{
+      ccat=cat;
+      document.querySelectorAll('.cat-btn').forEach(x=>x.classList.remove('active'));
+      b.classList.add('active');
+      wnum=1; score=0; streak=0; cor=0; wrg=0;
+      updStats(); buildQ(); startGame();
+    };
+    c.appendChild(b);
+  });
+}
+
+function buildQ(){
+  wq=shufArr([...WB[ccat][clv]]).slice(0,total);
+}
+
+function startGame(){
+  active=true;
+  document.getElementById('gc').style.display='block';
+  document.getElementById('goc').classList.remove('show');
+  document.getElementById('wic').classList.remove('show');
+  setFB('',''); loadWord();
+}
+
+function loadWord(){
+  clrTmr();
+  if(wnum>total||wq.length===0){endGame();return;}
+  document.getElementById('wic').classList.remove('show');
+  cw=wq[wnum-1]; sl=[]; ui=[];
+  const c=LVC[clv], ct=document.getElementById('ct');
+  if(c.showHint){ct.textContent=cw.h;ct.className='clue-txt';}
+  else{ct.textContent='[ Hard Mode — No hints! Figure it out. ]';ct.className='clue-txt no-hint';}
+  document.getElementById('wv').textContent=wnum;
+  document.getElementById('pl').textContent=wnum+' / '+total;
+  document.getElementById('pf').style.width=(wnum/total*100)+'%';
+  renderSlots(); renderTiles(); setFB('','');
+  if(c.timer>0) startTmr(c.timer);
+}
+
+function renderTiles(){
+  const sc=shufArr(cw.w.split(''));
+  const c=document.getElementById('sd'); c.innerHTML='';
+  sc.forEach((l,i)=>{
+    const t=document.createElement('div');
+    t.className='ltile'; t.textContent=l;
+    t.dataset.i=i; t.dataset.l=l;
+    t.onclick=()=>selTile(t,i); c.appendChild(t);
+  });
+}
+
+function shuffTiles(){
+  const c=document.getElementById('sd');
+  const tiles=[...c.querySelectorAll('.ltile:not(.used)')];
+  tiles.forEach(t=>c.removeChild(t));
+  shufArr(tiles).forEach(t=>c.appendChild(t));
+}
+
+function renderSlots(){
+  const r=document.getElementById('ar'); r.innerHTML='';
+  for(let i=0;i<cw.w.length;i++){
+    const s=document.createElement('div');
+    s.className='aslot'; s.dataset.si=i;
+    s.onclick=()=>remSlot(i); r.appendChild(s);
+  }
+}
+
+function selTile(tile,idx){
+  if(tile.classList.contains('used'))return;
+  const ei=sl.length; if(ei>=cw.w.length)return;
+  tile.classList.add('used','sel');
+  sl.push({l:tile.dataset.l,ti:idx}); ui.push(idx);
+  const s=document.querySelector('.aslot[data-si="'+ei+'"]');
+  if(s){s.textContent=tile.dataset.l; s.dataset.ti=idx;}
+}
+
+function remSlot(si){
+  if(si>=sl.length)return;
+  const rm=sl.splice(si); ui=sl.map(x=>x.ti);
+  for(let i=si;i<cw.w.length;i++){
+    const s=document.querySelector('.aslot[data-si="'+i+'"]');
+    if(s){s.textContent=''; delete s.dataset.ti;}
+  }
+  sl.forEach((x,i)=>{if(i>=si){const s=document.querySelector('.aslot[data-si="'+i+'"]');if(s){s.textContent=x.l;s.dataset.ti=x.ti;}}});
+  rm.forEach(x=>{const t=document.querySelector('.ltile[data-i="'+x.ti+'"]');if(t)t.classList.remove('used','sel');});
+}
+
+function clrAns(){
+  sl=[]; ui=[]; renderSlots();
+  document.querySelectorAll('.ltile').forEach(t=>t.classList.remove('used','sel'));
+}
+
+function chkAns(){
+  if(sl.length<cw.w.length){
+    setFB('Fill all letters first!','wrong');
+    document.getElementById('ar').classList.add('shake');
+    setTimeout(()=>document.getElementById('ar').classList.remove('shake'),400);
+    return;
+  }
+  const ua=sl.map(x=>x.l).join('');
+  if(ua===cw.w){
+    clrTmr();
+    const pts=(10+streak*2)*LVC[clv].mult;
+    score+=pts; streak++; cor++;
+    updStats(); setFB('CORRECT! +'+pts+' PTS','correct');
+    showWI();
+    setTimeout(()=>{wnum++;loadWord();},2000);
+  } else {
+    streak=0; wrg++;
+    updStats(); setFB('WRONG — TRY AGAIN','wrong');
+    document.getElementById('gc').classList.add('shake');
+    setTimeout(()=>document.getElementById('gc').classList.remove('shake'),400);
+  }
+}
+
+function useHint(){
+  if(hints<=0){setFB('No hints left!','wrong');return;}
+  const ni=sl.length; if(ni>=cw.w.length)return;
+  const cl=cw.w[ni];
+  const tiles=document.querySelectorAll('.ltile:not(.used)');
+  for(const t of tiles){
+    if(t.dataset.l===cl){
+      hints--;
+      document.getElementById('hv').textContent=hints;
+      selTile(t,parseInt(t.dataset.i));
+      setFB('Hint: "'+cl+'" placed','correct');
+      return;
+    }
+  }
+}
+
+function skip(){
+  clrTmr(); streak=0; wrg++;
+  updStats(); setFB('Word skipped.','wrong');
+  showWI();
+  setTimeout(()=>{wnum++;loadWord();},1600);
+}
+
+function showWI(){
+  document.getElementById('witag').textContent=ccat+' — '+clv.toUpperCase();
+  document.getElementById('wiw').textContent=cw.w;
+  document.getElementById('wid').textContent=cw.d;
+  document.getElementById('wic').classList.add('show');
+}
+
+function setFB(m,t){const el=document.getElementById('fb');el.textContent=m;el.className='feedback '+(t||'');}
+function updStats(){document.getElementById('sv').textContent=score;document.getElementById('stv').textContent=streak;document.getElementById('hv').textContent=hints;}
+
+// ===== TIMER =====
+function startTmr(s){
+  tleft=s; updTmr();
+  ti=setInterval(()=>{
+    tleft--; updTmr();
+    if(tleft<=0){
+      clrTmr(); setFB('TIME UP!','wrong');
+      streak=0; wrg++; updStats(); showWI();
+      setTimeout(()=>{wnum++;loadWord();},1600);
+    }
+  },1000);
+}
+function updTmr(){
+  const pct=(tleft/LVC[clv].timer)*100;
+  document.getElementById('tf').style.width=pct+'%';
+  document.getElementById('tf').style.background=tleft<=10?'#ff0000':'var(--accent2)';
+  document.getElementById('tl').textContent=tleft+'s';
+}
+function clrTmr(){if(ti){clearInterval(ti);ti=null;}}
+
+// ===== END GAME =====
+function endGame(){
+  active=false; clrTmr();
+  document.getElementById('gc').style.display='none';
+  document.getElementById('wic').classList.remove('show');
+  document.getElementById('goc').classList.add('show');
+  document.getElementById('fsc').textContent=score;
+  document.getElementById('fco').textContent=cor;
+  document.getElementById('fwr').textContent=wrg;
+  const now=new Date();
+  const ds=now.toLocaleDateString('en-PH',{month:'short',day:'numeric',year:'numeric'});
+  saveLB({name:pname,level:clv,score,correct:cor,wrong:wrg,date:ds});
+}
+
+function restart(){
+  clrTmr();
+  score=0; streak=0; wnum=1; cor=0; wrg=0;
+  hints=LVC[clv].hints; updStats(); buildQ();
+  document.getElementById('gc').style.display='block';
+  document.getElementById('goc').classList.remove('show');
+  startGame();
+}
+</script>
+</body>
+</html>
